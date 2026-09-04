@@ -3,11 +3,9 @@ import requests
 import yfinance as yf
 from zhipuai import ZhipuAI
 
-# 读取密钥，仅从github secrets读取
 ZHIPU_API_KEY = os.getenv("ZHIPU_API_KEY")
 SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 
-# ===== 5个指数代码，完整清单 =====
 ticker_map = {
     "标普500 SPX": "^GSPC",
     "道指 DJI": "^DJI",
@@ -17,7 +15,6 @@ ticker_map = {
 }
 
 def get_index_data():
-    """获取上个交易日收盘数据"""
     result_data = {}
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
@@ -51,7 +48,6 @@ def generate_analysis(data):
     )
     return resp.choices[0].message.content
 
-# Server酱推送函数
 def serverchan_send(title, content, sendkey):
     url = f"https://sctapi.ftqq.com/{sendkey}.send"
     data = {
