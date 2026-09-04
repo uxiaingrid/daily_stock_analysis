@@ -1,8 +1,8 @@
 name: Market Auto Report
 on:
-    schedule:
-    # UTC时间，每周1~5 10点执行，等于北京时间 18:00，美股当日收盘后生成报告
-    - cron: '0 10 * * 1-5'
+  schedule:
+    # UTC时间每周一至周五 22:00 触发 → 北京时间 次日早上06:00
+    - cron: '0 22 * * 1-5'
   workflow_dispatch: # 支持手动点按钮立即运行测试
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
 
       - name: Install python & dependencies
         run: |
-          pip install yfinance zhipuai requests sniffio anyio
+          pip install yfinance zhipuai requests sniffio
 
       - name: Run script
         env:
