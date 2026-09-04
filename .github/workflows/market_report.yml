@@ -14,10 +14,10 @@ jobs:
 
       - name: Install python & dependencies
         run: |
-          pip install yfinance zhipuai requests
+          pip install yfinance zhipuai==0.3.8 requests
 
       - name: Run script
         env:
-          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
         run: python market_analysis.py
