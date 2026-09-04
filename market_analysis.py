@@ -3,7 +3,7 @@ import requests
 import yfinance as yf
 from zhipuai import ZhipuAI
 
-ZHIPU_API_KEY = os.getenv("ZHIPU_API_KEY")
+ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
 SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 
 ticker_map = {
@@ -41,7 +41,7 @@ def generate_analysis(data):
 全文控制在300字以内。
 ⚠️ 强制在文末标注：【本内容仅为数据复盘，不构成任何投资建议】
 """
-    client = ZhipuAI(api_key=ZHIPU_API_KEY)
+    client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     resp = client.chat.completions.create(
         model="glm-4-flash",
         messages=[{"role":"user","content":prompt}]
