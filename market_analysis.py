@@ -5,7 +5,8 @@ from zhipuai import ZhipuAI
 
 # 读取密钥，仅从github secrets读取
 ZHIPU_API_KEY = os.getenv("ZHIPU_API_KEY")
-PUSHPLUS_TOKEN = os.getenv("PUSHPLUS_TOKEN")
+WXPUSHER_APP_TOKEN = os.getenv("WXPUSHER_APP_TOKEN")
+WXPUSHER_UID = os.getenv("WXPUSHER_UID")
 
 # ===== 5个指数代码，完整清单 =====
 ticker_map = {
@@ -51,15 +52,17 @@ def generate_analysis(data):
     )
     return resp.choices[0].message.content
 
-def send_wechat_push(content):
-    url = "http://www.pushplus.plus/send"
-    payload = {
-        "token": PUSHPLUS_TOKEN,
-        "title": "美股盘后复盘报告",
-        "content": content
+# WxPusher推送函数
+def send_wx(content):
+    url = "https://wxpusher.zjiecode.com/api/send/message"
+    data = {
+        "appToken": WXPUSHER_APP_TOKEN,
+        "content": content,
+        "summary": "美股收盘报告",
+        "uids":[WXPUSHER_UID]
     }
-    res = requests.post(url, json=payload)
-    print("PushPlus推送返回：", res.text)
+    res = requests.post(url,json=data)
+    print(res.json())
 
 if __name__ == "__main__":
     index_data = get_index_data()
