@@ -67,5 +67,5 @@ def send_wx(content):
 if __name__ == "__main__":
     index_data = get_index_data()
     report = generate_analysis(index_data)
-    send_wechat_push(report)
+    send_wx(report)
     print("✅ 任务执行完毕")
