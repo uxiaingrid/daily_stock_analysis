@@ -20,4 +20,6 @@ jobs:
         env:
           ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          AGENT_SKILLS: ${{ secrets.AGENT_SKILLS }}
+          BOCHA_API_KEY: ${{ secrets.BOCHA_API_KEY }}
         run: python market_analysis.py
