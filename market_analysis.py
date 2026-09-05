@@ -38,8 +38,10 @@ def get_index_data():
     if "event_driven" in skills:
         try:
             macro_event = skills["event_driven"].get_macro_news()
+            print(f"====DEBUG 宏观新闻返回值====\n{macro_event}")
         except Exception as e:
             macro_event = f"【宏观新闻异常】{str(e)}"
+            print(f"====DEBUG 宏观报错====\n{e}")
 
     result_data = {}
     for name, ticker_code in ticker_map.items():
@@ -76,15 +78,21 @@ def get_index_data():
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
     prompt = f"""
+【硬性规则：生成的报告开头必须单独保留【宏观事件】板块，不允许省略、合并、删除这段内容】
 当日美股宏观事件：
 {macro_info}
 
 下面是美股五大指数上个交易日收盘数据：
 {data}
-生成简短盘后行情分析：
-1、简述各指数涨跌情况
-2、盘面强弱简单解读，重点留意费城半导体表现
-3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各指数压力/支撑参考
+
+输出格式严格按照下面模板：
+美股收盘报告
+【宏观事件】
+（这里写宏观新闻总结）
+1、简述各指数涨跌情况：
+2、盘面强弱简单解读，重点留意费城半导体表现：
+3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各指数压力/支撑参考：
+
 全文控制在500字以内。
 ⚠️ 强制在文末标注：【本内容仅为数据复盘，不构成任何投资建议】
 """
