@@ -44,10 +44,13 @@ def get_index_data():
         change = round(latest["Close"] - prev["Close"],2)
         change_pct = round((latest["Close"] - prev["Close"])/prev["Close"]*100, 2)
 
-        # ========== 缠论调用（15分钟K线） ==========
+        # ========== 缠论调用（15分钟K线 + 异常捕获，失败不阻断任务） ==========
         chan_result = ""
         if "chan_theory" in skills:
-            chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="5d", interval="15m")
+            try:
+                chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="5d", interval="15m")
+            except Exception as e:
+                chan_result = f"【缠论获取失败】{str(e)}"
         # ========================================
 
         result_data[name] = {
@@ -82,11 +85,17 @@ def serverchan_send(title, content, sendkey):
         "title": title,
         "desp": content
     }
-    res = requests.post(url, data=data)
-    print(res.json())
+    try:
+        res = requests.post(url, data=data, timeout=10)
+        print(res.json())
+    except Exception as e:
+        print(f"Server酱推送异常: {e}")
 
 if __name__ == "__main__":
-    index_data = get_index_data()
-    report = generate_analysis(index_data)
-    serverchan_send("美股收盘报告", report, SERVERCHAN_SENDKEY)
-    print("✅ 任务执行完毕")
+    try:
+        index_data = get_index_data()
+        report = generate_analysis(index_data)
+        serverchan_send("美股收盘报告", report, SERVERCHAN_SENDKEY)
+        print("✅ 任务执行完毕")
+    except Exception as e:
+        print(f"主程序整体异常：{e}")
