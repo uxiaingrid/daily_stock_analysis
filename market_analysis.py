@@ -3,7 +3,6 @@ import requests
 import yfinance as yf
 from zhipuai import ZhipuAI
 import importlib.util
-import os
 
 def load_skills():
     skill_names_raw = os.getenv("AGENT_SKILLS","")
@@ -33,7 +32,15 @@ ticker_map = {
 }
 
 def get_index_data():
-    skills = load_skills() # 只加载一次skills
+    skills = load_skills()
+    # ========= 博查宏观新闻：只调用1次 =========
+    macro_event = ""
+    if "event_driven" in skills:
+        try:
+            macro_event = skills["event_driven"].get_macro_news()
+        except Exception as e:
+            macro_event = f"【宏观新闻异常】{str(e)}"
+
     result_data = {}
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
@@ -42,13 +49,16 @@ def get_index_data():
         prev = hist.iloc[-2]
         close_price = round(latest["Close"],2)
         change = round(latest["Close"] - prev["Close"],2)
-        change_pct = round((latest["Close"] - prev["Close"])/prev["Close"]*100, 2)
+        change_pct = round((latest["Close"] - prev["Close"])/prev["Close"]*100,2)
 
-        # ========== 缠论调用（15分钟K线 + 异常捕获，失败不阻断任务） ==========
+        # ========== 缠论调用：SOX特殊处理 ==========
         chan_result = ""
         if "chan_theory" in skills:
             try:
-                chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="5d", interval="15m")
+                if ticker_code == "^SOX":
+                    chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="30d", interval="1d")
+                else:
+                    chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="5d", interval="15m")
             except Exception as e:
                 chan_result = f"【缠论获取失败】{str(e)}"
         # ========================================
@@ -59,16 +69,22 @@ def get_index_data():
             "涨跌幅%": change_pct,
             "缠论分型": chan_result
         }
+    # 附加宏观新闻
+    result_data["macro_info"] = macro_event
     return result_data
 
 def generate_analysis(data):
+    macro_info = data.pop("macro_info","")
     prompt = f"""
+当日美股宏观事件：
+{macro_info}
+
 下面是美股五大指数上个交易日收盘数据：
 {data}
 生成简短盘后行情分析：
 1、简述各指数涨跌情况
 2、盘面强弱简单解读，重点留意费城半导体表现
-3、结合附带的缠论分型信息（15分钟级别），简要说明各指数压力/支撑参考
+3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各指数压力/支撑参考
 全文控制在500字以内。
 ⚠️ 强制在文末标注：【本内容仅为数据复盘，不构成任何投资建议】
 """
