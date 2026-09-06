@@ -1,3 +1,14 @@
+import os
+import requests
+import yfinance as yf
+from zhipuai import ZhipuAI
+
+# 读取环境变量
+ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
+SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
+
+# 这里放 get_index_data() 函数
+
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
     market_name = os.getenv("MARKET_NAME","")
@@ -36,3 +47,25 @@ def generate_analysis(data):
         messages=[{"role":"user","content":prompt}]
     )
     return resp.choices[0].message.content
+
+def send_wechat_report(title, content):
+    import requests
+    sendkey = os.getenv("SERVERCHAN_SENDKEY")
+    if not sendkey:
+        print("SERVERCHAN_SENDKEY为空，推送终止")
+        return False
+    url = f"https://sctapi.ftqq.com/{sendkey}.send"
+    payload = {
+        "title": title,
+        "desp": content
+    }
+    resp = requests.post(url, data=payload)
+    print("Server酱返回结果：", resp.text)
+    return resp.json()["code"] == 0
+
+# ========== 主入口 ==========
+if __name__ == "__main__":
+    all_data = get_index_data()
+    report_content = generate_analysis(all_data)
+    # 调用微信推送
+    send_wechat_report(title=f"{os.getenv('MARKET_NAME')}盘后报告", content=report_content)
