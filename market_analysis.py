@@ -11,11 +11,8 @@ def get_index_data():
     """获取上个交易日收盘数据"""
     result_data = {}
     ticker_map = {
-        "标普500 SPX": "^GSPC",
-        "道指 DJI": "^DJI",
-        "纳指综合 IXIC": "^IXIC",
-        "纳指100 NDX": "^NDX",
-        "费城半导体 SOX": "^SOX"
+        "日经225 N225": "^N225",
+        "东证TOPIX": "^TOPX"
     }
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
