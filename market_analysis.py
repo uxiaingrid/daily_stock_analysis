@@ -69,7 +69,7 @@ prompt = f"""
 📍结合缠论分型信息（15分钟级别），说明各标的压力/支撑参考：
 (每个标的压力、支撑分行书写)
 
-⚠️免责声明：本内容仅为行情复盘研究，不构成uxia对你的任何投资建议
+⚠️免责声明：本内容仅为行情复盘研究，不构成任何投资建议
 """
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     resp = client.chat.completions.create(
