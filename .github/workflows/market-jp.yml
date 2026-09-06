@@ -1,0 +1,33 @@
+name: 日股收盘自动分析推送
+
+# 触发：手动测试 + 定时
+on:
+  workflow_dispatch:
+  schedule:
+    # 日股收盘北京时间14:00，14:30执行，UTC=06:30
+    - cron: '30 6 * * 1,2,3,4,5'
+
+env:
+  ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
+  SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+  TICKER_LIST: ${{ vars.TICKER_LIST_JP }}
+
+jobs:
+  run-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 配置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装项目依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance zhipuai requests
+
+      - name: 执行日股分析推送脚本
+        run: python market_analysis.pychu
