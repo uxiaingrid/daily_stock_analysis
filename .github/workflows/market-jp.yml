@@ -10,6 +10,7 @@ on:
 env:
   ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
   SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+  MARKET_NAME: ${{ vars.MARKET_NAME }}
   TICKER_LIST: ${{ vars.TICKER_LIST_JP }}
 
 jobs:
