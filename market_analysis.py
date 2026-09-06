@@ -1,111 +1,32 @@
-import os
-import requests
-import yfinance as yf
-from zhipuai import ZhipuAI
-import importlib.util
-
-def load_skills():
-    skill_names_raw = os.getenv("AGENT_SKILLS","")
-    skill_names = skill_names_raw.split(",")
-    skill_modules = {}
-    for name in skill_names:
-        name = name.strip()
-        if not name:
-            continue
-        file_path = f"skills/{name}.py"
-        if os.path.exists(file_path):
-            spec = importlib.util.spec_from_file_location(name, file_path)
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)
-            skill_modules[name] = mod
-    return skill_modules
-
-ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
-SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
-
-# 从环境变量读取标的列表，不再硬编码
-ticker_list_raw = os.getenv("TICKER_LIST", "")
-ticker_map = {}
-if ticker_list_raw:
-    items = ticker_list_raw.split(",")
-    for item in items:
-        item = item.strip()
-        if ":" in item:
-            display_name, ticker_code = item.split(":",1)
-            ticker_map[display_name.strip()] = ticker_code.strip()
-
-def get_index_data():
-    skills = load_skills()
-    # ========= 博查宏观新闻：只调用1次 =========
-    macro_event = ""
-    if "event_driven" in skills:
-        try:
-            macro_event = skills["event_driven"].get_macro_news()
-            print(f"====DEBUG 宏观新闻返回值====\n{macro_event}")
-        except Exception as e:
-            macro_event = f"【宏观新闻异常】{str(e)}"
-            print(f"====DEBUG 宏观报错====\n{e}")
-
-    result_data = {}
-    for name, ticker_code in ticker_map.items():
-        ticker = yf.Ticker(ticker_code)
-        hist = ticker.history(period="5d")
-        latest = hist.iloc[-1]
-        prev = hist.iloc[-2]
-        close_price = round(latest["Close"],2)
-        change = round(latest["Close"] - prev["Close"],2)
-        change_pct = round((latest["Close"] - prev["Close"])/prev["Close"]*100,2)
-
-        # ========== 缠论调用：SOX特殊处理 ==========
-        chan_result = ""
-        if "chan_theory" in skills:
-            try:
-                if ticker_code == "^SOX":
-                    chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="30d", interval="1d")
-                else:
-                    chan_result = skills["chan_theory"].get_chanlun_analysis(ticker_code, period="5d", interval="15m")
-            except Exception as e:
-                chan_result = f"【缠论获取失败】{str(e)}"
-        # ========================================
-
-        result_data[name] = {
-            "收盘": close_price,
-            "涨跌": change,
-            "涨跌幅%": change_pct,
-            "缠论分型": chan_result
-        }
-    # 附加宏观新闻
-    result_data["macro_info"] = macro_event
-    return result_data
-
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
+    market_name = os.getenv("MARKET_NAME","")
     prompt = f"""
 【硬性排版规则，严格遵守】
-1. 采用公众号主流排版风格，段落间距1.5倍；
-2. 【宏观事件】为独立板块；
-3. 1、2、3每个序号条目单独起段落，条目之间空一行；
-4. 禁止文字全部挤在一起，不要紧凑排版；
-5. 全文控制在500字以内；
+1. 采用公众号主流排版风格，段落间距1.5倍；使用Markdown语法+Emoji表情美化
+2. 【宏观事件】为独立板块；板块之间用---分割线隔开
+3. 每个条目单独起段落，条目之间空一行
+4. 禁止文字全部挤在一起，不要紧凑排版
+5. 全文控制在500字以内
 6. 文末固定带上免责声明。
 
-当日美股宏观事件：
+当日宏观事件：
 {macro_info}
 
 下面是标的上个交易日收盘数据：
 {data}
 
 严格按下面模板输出：
-收盘报告
+# 📈 {market_name}收盘报告
+---
+🌐【宏观事件】
+（宏观内容，优先日本央行、日元汇率相关信息）
 
-【宏观事件】
-（宏观内容）
+📊 简述各标的涨跌情况：
 
-1、简述各标的涨跌情况：
+🔥盘面强弱解读：
 
-2、盘面强弱简单解读，重点留意费城半导体表现：
-
-3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各标的压力/支撑参考：
+📌结合附带的缠论分型信息（15分钟级别），简要说明各标的压力/支撑参考：
 
 ⚠️【本内容仅为数据复盘，不构成任何投资建议】
 """
@@ -115,24 +36,3 @@ def generate_analysis(data):
         messages=[{"role":"user","content":prompt}]
     )
     return resp.choices[0].message.content
-
-def serverchan_send(title, content, sendkey):
-    url = f"https://sctapi.ftqq.com/{sendkey}.send"
-    data = {
-        "title": "美股收盘报告",
-        "desp": content
-    }
-    try:
-        res = requests.post(url, data=data, timeout=10)
-        print(res.json())
-    except Exception as e:
-        print(f"Server酱推送异常: {e}")
-
-if __name__ == "__main__":
-    try:
-        index_data = get_index_data()
-        report = generate_analysis(index_data)
-        serverchan_send("美股收盘报告", report, SERVERCHAN_SENDKEY)
-        print("✅ 任务执行完毕")
-    except Exception as e:
-        print(f"主程序整体异常：{e}")
