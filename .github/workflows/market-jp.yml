@@ -30,4 +30,4 @@ jobs:
           pip install yfinance zhipuai requests
 
       - name: 执行日股分析推送脚本
-        run: python market_analysis.pychu
+        run: python market_analysis.py
