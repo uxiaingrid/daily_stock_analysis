@@ -7,7 +7,31 @@ from zhipuai import ZhipuAI
 ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
 SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 
-# 这里放 get_index_data() 函数
+def get_index_data():
+    """获取上个交易日收盘数据"""
+    result_data = {}
+    ticker_map = {
+        "标普500 SPX": "^GSPC",
+        "道指 DJI": "^DJI",
+        "纳指综合 IXIC": "^IXIC",
+        "纳指100 NDX": "^NDX",
+        "费城半导体 SOX": "^SOX"
+    }
+    for name, ticker_code in ticker_map.items():
+        ticker = yf.Ticker(ticker_code)
+        hist = ticker.history(period="5d")
+        last_row = hist.iloc[-1]
+        close_price = round(last_row["Close"],2)
+        open_price = round(last_row["Open"],2)
+        change = round(last_row["Close"] - last_row["Open"],2)
+        change_pct = round(change / last_row["Open"] * 100, 2)
+        result_data[name] = {
+            "close": close_price,
+            "open": open_price,
+            "change": change,
+            "change_pct": change_pct
+        }
+    return result_data
 
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
