@@ -17,6 +17,9 @@ def get_index_data():
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
         hist = ticker.history(period="5d")
+        if hist.empty:
+            print(f"警告：{name} 无行情数据，跳过该指数")
+            continue
         last_row = hist.iloc[-1]
         close_price = round(last_row["Close"],2)
         open_price = round(last_row["Open"],2)
