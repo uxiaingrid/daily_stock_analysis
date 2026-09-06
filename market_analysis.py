@@ -23,13 +23,16 @@ def load_skills():
 ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
 SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 
-ticker_map = {
-    "标普500 SPX": "^GSPC",
-    "道指 DJI": "^DJI",
-    "纳指综合 IXIC": "^IXIC",
-    "纳指100 NDX": "^NDX",
-    "费城半导体 SOX": "^SOX"
-}
+# 从环境变量读取标的列表，不再硬编码
+ticker_list_raw = os.getenv("TICKER_LIST", "")
+ticker_map = {}
+if ticker_list_raw:
+    items = ticker_list_raw.split(",")
+    for item in items:
+        item = item.strip()
+        if ":" in item:
+            display_name, ticker_code = item.split(":",1)
+            ticker_map[display_name.strip()] = ticker_code.strip()
 
 def get_index_data():
     skills = load_skills()
@@ -89,20 +92,20 @@ def generate_analysis(data):
 当日美股宏观事件：
 {macro_info}
 
-下面是美股五大指数上个交易日收盘数据：
+下面是标的上个交易日收盘数据：
 {data}
 
 严格按下面模板输出：
-美股收盘报告
+收盘报告
 
 【宏观事件】
 （宏观内容）
 
-1、简述各指数涨跌情况：
+1、简述各标的涨跌情况：
 
 2、盘面强弱简单解读，重点留意费城半导体表现：
 
-3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各指数压力/支撑参考：
+3、结合附带的缠论分型信息（15分钟级别，SOX为日线级别），简要说明各标的压力/支撑参考：
 
 ⚠️【本内容仅为数据复盘，不构成任何投资建议】
 """
@@ -116,7 +119,7 @@ def generate_analysis(data):
 def serverchan_send(title, content, sendkey):
     url = f"https://sctapi.ftqq.com/{sendkey}.send"
     data = {
-        "title": title,
+        "title": "美股收盘报告",
         "desp": content
     }
     try:
