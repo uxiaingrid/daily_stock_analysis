@@ -89,9 +89,17 @@ def send_wechat_report(title, content):
         "title": title,
         "desp": content
     }
-    resp = requests.post(url, data=payload)
-    print("Server酱返回结果：", resp.text)
-    return resp.json()["code"] == 0
+    try:
+        resp = requests.post(url, data=payload, timeout=20)
+        print("Server酱原始返回文本：", resp.text)
+        if resp.text.strip() == "":
+            print("Server酱返回为空")
+            return False
+        res = resp.json()
+        return res.get("code", 999) == 0
+    except Exception as e:
+        print("推送异常：", str(e))
+        return False
 
 # ========== 主入口 ==========
 if __name__ == "__main__":
