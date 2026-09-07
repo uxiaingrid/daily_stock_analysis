@@ -1,3 +1,38 @@
+import os
+import requests
+import yfinance as yf
+from zhipuai import ZhipuAI
+
+# 读取环境变量
+ZHIPUAI_API_KEY = os.getenv("ZHIPUAI_API_KEY")
+SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
+
+def get_index_data():
+    """获取上个交易日收盘数据"""
+    result_data = {}
+    ticker_map = {
+        "日经225 N225": "^N225",
+        "东证TOPIX": "^TOPX"
+    }
+    for name, ticker_code in ticker_map.items():
+        ticker = yf.Ticker(ticker_code)
+        hist = ticker.history(period="5d")
+        if hist.empty:
+            print(f"警告：{name} 无行情数据，跳过该指数")
+            continue
+        last_row = hist.iloc[-1]
+        close_price = round(last_row["Close"],2)
+        open_price = round(last_row["Open"],2)
+        change = round(last_row["Close"] - last_row["Open"],2)
+        change_pct = round(change / last_row["Open"] * 100, 2)
+        result_data[name] = {
+            "close": close_price,
+            "open": open_price,
+            "change": change,
+            "change_pct": change_pct
+        }
+    return result_data
+
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
     chan_analysis = data.pop("chan_analysis","")
@@ -42,3 +77,42 @@ def generate_analysis(data):
         messages=[{"role":"user","content":prompt}]
     )
     return resp.choices[0].message.content
+
+def send_wechat_report(title, content):
+    import requests
+    sendkey = os.getenv("SERVERCHAN_SENDKEY")
+    if not sendkey:
+        print("SERVERCHAN_SENDKEY为空，推送终止")
+        return False
+    url = f"https://sct.ftqq.com/{sendkey}.send"
+    payload = {
+        "title": title,
+        "desp": content
+    }
+    resp = requests.post(url, data=payload)
+    print("Server酱返回结果：", resp.text)
+    return resp.json()["code"] == 0
+
+# ========== 主入口 ==========
+if __name__ == "__main__":
+    all_data = get_index_data()
+
+    # 加载博查宏观新闻
+    try:
+        from skills.event_driven import get_macro_news
+        macro_info = get_macro_news()
+        all_data["macro_info"] = macro_info
+    except Exception as e:
+        all_data["macro_info"] = "暂无宏观资讯"
+
+    # 加载缠论分析结果
+    try:
+        from skills.chan_theory import get_chan_analysis
+        chan_result = get_chan_analysis(all_data)
+        all_data["chan_analysis"] = chan_result
+    except Exception as e:
+        all_data["chan_analysis"] = "缠论分析获取失败"
+
+    report_content = generate_analysis(all_data)
+    # 调用微信推送
+    send_wechat_report(title=f"{os.getenv('MARKET_NAME')}盘后报告", content=report_content)
