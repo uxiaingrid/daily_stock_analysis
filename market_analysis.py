@@ -10,10 +10,9 @@ SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 def get_index_data():
     """获取上个交易日收盘数据"""
     result_data = {}
-    # 修正yfinance可用代码：日经225 ^N225，东证TOPIX ^TPX
+    # 仅保留日经225，TOPX yfinance无数据暂时移除
     ticker_map = {
-        "日经225 N225": "^N225",
-        "东证TOPIX": "^TPX"
+        "日经225 N225": "^N225"
     }
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
@@ -37,7 +36,6 @@ def get_index_data():
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
     chan_analysis = data.pop("chan_analysis","")
-    market_name = os.getenv("MARKET_NAME","")
     prompt = f"""
 [硬性排版规则，严格遵守]
 1. 板块之间用 --- 分割
@@ -54,7 +52,7 @@ def generate_analysis(data):
 缠论分型分析结果：{chan_analysis}
 
 严格按下面模板输出：
-# 📈 {market_name}收盘报告
+# 📈 日股收盘报告
 ---
 🌐 [宏观事件]
 (宏观内容，优先日本央行、日元汇率相关信息)
@@ -68,7 +66,7 @@ def generate_analysis(data):
 (简短总结市场情绪)
 
 ---
-📍缠论分型分析结果：{chan_analysis}，基于15分钟级别，说明各标的压力/支撑参考：
+📍缠论分型分析结果：{chan_analysis}，基于15分钟级别，说明压力/支撑参考：
 
 ⚠️免责声明：本内容仅为行情复盘研究，不构成任何投资建议
 """
@@ -85,16 +83,21 @@ def send_wechat_report(title, content):
     if not sendkey:
         print("SERVERCHAN_SENDKEY为空，推送终止")
         return False
-    # Server酱Turbo接口使用GET，参数拼在url
-    url = f"https://sct.ftqq.com/{sendkey}.send?title={title}&desp={content}"
+    url = "https://sct.ftqq.com/send"
+    payload = {
+        "key": sendkey,
+        "title": title,
+        "desp": content
+    }
     try:
-        resp = requests.get(url, timeout=20)
+        resp = requests.post(url, data=payload, timeout=20)
         print("Server酱原始返回文本：", resp.text)
-        if resp.text.strip() == "":
-            print("Server酱返回为空")
+        try:
+            res = resp.json()
+            return res.get("code",999) == 0
+        except:
+            print("返回不是JSON，推送失败")
             return False
-        res = resp.json()
-        return res.get("code", 999) == 0
     except Exception as e:
         print("推送异常：", str(e))
         return False
@@ -120,5 +123,5 @@ if __name__ == "__main__":
         all_data["chan_analysis"] = "缠论分析获取失败"
 
     report_content = generate_analysis(all_data)
-    # 调用微信推送
-    send_wechat_report(title=f"{os.getenv('MARKET_NAME')}盘后报告", content=report_content)
+    # 固定标题，规避MARKET_NAME变量为空问题
+    send_wechat_report(title="日股盘后报告", content=report_content)
