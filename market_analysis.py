@@ -10,9 +10,10 @@ SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 def get_index_data():
     """获取上个交易日收盘数据"""
     result_data = {}
+    # 修正yfinance可用代码：日经225 ^N225，东证TOPIX ^TPX
     ticker_map = {
         "日经225 N225": "^N225",
-        "东证TOPIX": "^TOPX"
+        "东证TOPIX": "^TPX"
     }
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
@@ -84,13 +85,10 @@ def send_wechat_report(title, content):
     if not sendkey:
         print("SERVERCHAN_SENDKEY为空，推送终止")
         return False
-    url = f"https://sct.ftqq.com/{sendkey}.send"
-    payload = {
-        "title": title,
-        "desp": content
-    }
+    # Server酱Turbo接口使用GET，参数拼在url
+    url = f"https://sct.ftqq.com/{sendkey}.send?title={title}&desp={content}"
     try:
-        resp = requests.post(url, data=payload, timeout=20)
+        resp = requests.get(url, timeout=20)
         print("Server酱原始返回文本：", resp.text)
         if resp.text.strip() == "":
             print("Server酱返回为空")
