@@ -1,46 +1,36 @@
 import yfinance as yf
-import pandas as pd
 
-def get_chanlun_analysis(symbol, period="5d", interval="15m"):
-    """
-    缠论简易分析，识别顶底分型、支撑压力
-    symbol:指数代码
-    period:时间跨度
-    interval:K线周期，15m=15分钟线
-    """
+def get_chan_analysis(raw_data):
+    """缠论分析：只取东证ETF 1306.T，15分钟K线"""
+    ticker_code = "1306.T"
     try:
-        df = yf.download(symbol, period=period, interval=interval)
-        # 压平多层列名
-        df.columns = df.columns.get_level_values(0)
-        if len(df) < 10:
-            return "K线数据不足，无法计算分型"
-        
-        close = df["Close"]
-        high = df["High"]
-        low = df["Low"]
+        # 拉取15分钟K线，最近5个交易日
+        ticker = yf.Ticker(ticker_code)
+        df = ticker.history(period="5d", interval="15m")
+        if df.empty:
+            return f"{ticker_code} 无法获取15分钟K线，缠论分析失败"
 
-        # 简易分型判断函数
-        def is_ding_fx(i):
-            return high.iloc[i] > high.iloc[i-1] and high.iloc[i] > high.iloc[i+1] and low.iloc[i] > low.iloc[i-1] and low.iloc[i] > low.iloc[i+1]
-        def is_di_fx(i):
-            return low.iloc[i] < low.iloc[i-1] and low.iloc[i] < low.iloc[i+1] and high.iloc[i] < high.iloc[i-1] and high.iloc[i] < high.iloc[i+1]
+        # 简易缠论分型识别
+        high_list = df["High"].tolist()
+        low_list = df["Low"].tolist()
+        fenxing_msg = ""
+        for i in range(2, len(high_list)-2):
+            h_mid = high_list[i]
+            h_left1, h_left2 = high_list[i-1], high_list[i-2]
+            h_right1, h_right2 = high_list[i+1], high_list[i+2]
+            l_mid = low_list[i]
+            l_left1, l_left2 = low_list[i-1], low_list[i-2]
+            l_right1, l_right2 = low_list[i+1], low_list[i+2]
+            # 顶分型
+            if h_mid > h_left1 and h_mid > h_left2 and h_mid > h_right1 and h_mid > h_right2:
+                fenxing_msg += f"顶分型，价格{h_mid:.2f}；"
+            # 底分型
+            if l_mid < l_left1 and l_mid < l_left2 and l_mid < l_right1 and l_mid < l_right2:
+                fenxing_msg += f"底分型，价格{l_mid:.2f}；"
 
-        ding_list = []
-        di_list = []
-        for i in range(2, len(df)-2):
-            if is_ding_fx(i):
-                ding_list.append(high.iloc[i])
-            if is_di_fx(i):
-                di_list.append(low.iloc[i])
-
-        latest_price = close.iloc[-1]
-        resistance = ding_list[-2:] if len(ding_list)>=2 else [round(latest_price*1.02,2), round(latest_price*1.04,2)]
-        support = di_list[-2:] if len(di_list)>=2 else [round(latest_price*0.98,2), round(latest_price*0.96,2)]
-
-        res_text = f"""标的:{symbol},最新价:{latest_price:.2f}
-最近顶分型压力:{resistance}
-最近底分型支撑:{support}
-仅简易分型，不含笔/线段/中枢，仅供复盘"""
-        return res_text
-    except Exception as err:
-        return f"【chan_theory异常】{str(err)}"
+        if fenxing_msg == "":
+            fenxing_msg = "近期无明显顶底分型"
+        res_text = f"标的：东证TOPIX ETF(1306.T)，15分钟级别缠论：{fenxing_msg}"
+        return res_text[:400]
+    except Exception as e:
+        return f"缠论分析获取失败：{str(e)}"
