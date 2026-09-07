@@ -10,7 +10,7 @@ SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 def get_index_data():
     """获取上个交易日收盘数据"""
     result_data = {}
-    # 仅保留日经225，TOPX yfinance无数据暂时移除
+    # 仅保留日经225
     ticker_map = {
         "日经225 N225": "^N225"
     }
@@ -52,7 +52,7 @@ def generate_analysis(data):
 缠论分型分析结果：{chan_analysis}
 
 严格按下面模板输出：
-# 📈 日股收盘报告
+# 📈 日股盘后报告
 ---
 🌐 [宏观事件]
 (宏观内容，优先日本央行、日元汇率相关信息)
@@ -83,24 +83,33 @@ def send_wechat_report(title, content):
     if not sendkey:
         print("SERVERCHAN_SENDKEY为空，推送终止")
         return False
-    url = "https://sct.ftqq.com/send"
+    # Server酱Turbo双API域名，自动重试
+    api_hosts = [
+        "https://sctapi.ftqq.com/send",
+        "https://sct2.ftqq.com/send"
+    ]
     payload = {
         "key": sendkey,
         "title": title,
         "desp": content
     }
-    try:
-        resp = requests.post(url, data=payload, timeout=20)
-        print("Server酱原始返回文本：", resp.text)
+    for url in api_hosts:
         try:
-            res = resp.json()
-            return res.get("code",999) == 0
-        except:
-            print("返回不是JSON，推送失败")
-            return False
-    except Exception as e:
-        print("推送异常：", str(e))
-        return False
+            resp = requests.post(url, data=payload, timeout=20)
+            print(f"尝试接口 {url}，返回文本：{resp.text}")
+            try:
+                res = resp.json()
+                if res.get("code",999) == 0:
+                    print("推送成功")
+                    return True
+            except:
+                print(f"{url} 返回不是JSON，尝试下一个域名")
+                continue
+        except Exception as e:
+            print(f"{url} 请求异常：{str(e)}，尝试下一个域名")
+            continue
+    print("全部域名推送失败")
+    return False
 
 # ========== 主入口 ==========
 if __name__ == "__main__":
@@ -123,5 +132,4 @@ if __name__ == "__main__":
         all_data["chan_analysis"] = "缠论分析获取失败"
 
     report_content = generate_analysis(all_data)
-    # 固定标题，规避MARKET_NAME变量为空问题
     send_wechat_report(title="日股盘后报告", content=report_content)
