@@ -83,7 +83,7 @@ def send_wechat_report(title, content):
     if not sendkey:
         print("SERVERCHAN_SENDKEY为空，推送终止")
         return False
-    # Server酱Turbo双API域名，自动重试
+    # Server酱Turbo双API域名，优先主域名；业务报错不再重试，保护免费额度
     api_hosts = [
         "https://sctapi.ftqq.com/send",
         "https://sct2.ftqq.com/send"
@@ -102,8 +102,13 @@ def send_wechat_report(title, content):
                 if res.get("code",999) == 0:
                     print("推送成功")
                     return True
+                else:
+                    # 业务层面报错（额度用尽、key错误），直接退出，不消耗第二条额度
+                    print(f"{url} 返回业务错误，停止重试，保护额度")
+                    return False
             except:
-                print(f"{url} 返回不是JSON，尝试下一个域名")
+                # 网关返回XML、MethodNotAllowed这类服务异常，才尝试下一个备用域名
+                print(f"{url} 返回非JSON，尝试下一个域名")
                 continue
         except Exception as e:
             print(f"{url} 请求异常：{str(e)}，尝试下一个域名")
