@@ -10,9 +10,10 @@ SERVERCHAN_SENDKEY = os.getenv("SERVERCHAN_SENDKEY")
 def get_index_data():
     """获取上个交易日收盘数据"""
     result_data = {}
-    # 仅保留日经225
+    
     ticker_map = {
         "日经225 N225": "^N225"
+        "东证TOPIX 1306.T": "1306.T"
     }
     for name, ticker_code in ticker_map.items():
         ticker = yf.Ticker(ticker_code)
