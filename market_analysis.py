@@ -1,5 +1,6 @@
 def generate_analysis(data):
     macro_info = data.pop("macro_info","")
+    chan_analysis = data.pop("chan_analysis","")
     market_name = os.getenv("MARKET_NAME","")
     prompt = f"""
 [硬性排版规则，严格遵守]
@@ -14,6 +15,7 @@ def generate_analysis(data):
 
 下面是标的上个交易日收盘数据：
 {data}
+缠论分型分析结果：{chan_analysis}
 
 严格按下面模板输出：
 # 📈 {market_name}收盘报告
@@ -30,8 +32,7 @@ def generate_analysis(data):
 (简短总结市场情绪)
 
 ---
-📍结合缠论分型信息（15分钟级别），说明各标的压力/支撑参考：
-(每个标的压力、支撑分行书写)
+📍缠论分型分析结果：{chan_analysis}，基于15分钟级别，说明各标的压力/支撑参考：
 
 ⚠️免责声明：本内容仅为行情复盘研究，不构成任何投资建议
 """
