@@ -9,9 +9,9 @@ def get_macro_news():
     url = "https://api.bochaai.com/v1/web-search"
     headers = {"Authorization": f"Bearer {BOCHA_API_KEY}", "Content-Type": "application/json"}
     payload = {
-        "query": "美股 美联储 最新宏观新闻，非农，CPI，利率相关消息",
+        "query":"日本央行 日元汇率 日债 美联储政策 对日经225、东证TOPIX的市场影响，最新宏观资讯",
         "summary": True,
-        "pageSize":3
+        "count": 5
     }
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=20)
