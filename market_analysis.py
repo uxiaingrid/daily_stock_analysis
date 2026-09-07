@@ -80,7 +80,7 @@ def generate_analysis_report(raw_data):
 ---
 📍缠论分型分析结果：{chan_analysis}
 
-⚠️免责声明：本内容仅为行情复盘研究，不构成任何投资建议
+⚠️免责声明：本内容仅供参考，祝你发大财，赚钱了请我吃饭。
 """
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     resp = client.chat.completions.create(
