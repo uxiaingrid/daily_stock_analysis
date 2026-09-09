@@ -54,7 +54,11 @@ def generate_analysis_report(raw_data):
 1. 板块之间使用 --- 分割
 2. 段落宽松，不要挤成一团
 3. 全文控制在500字以内
-4. 文末固定免责声明
+4. 文末放置免责声明
+
+【重要硬性约束】
+1. 只使用近1‑3个交易日的日股相关新闻；禁止输出数周前历史旧资讯；**禁止输出本周累计涨跌幅统计**。
+2. 行情只描述当日收盘涨跌，宏观事件逻辑要和当日盘面保持一致，不能矛盾。
 
 宏观事件信息：
 {macro_info}
@@ -80,17 +84,16 @@ def generate_analysis_report(raw_data):
 ---
 📍缠论分型分析结果：{chan_analysis}
 
-⚠️免责声明：本内容仅供参考，祝你发大财，赚钱了请我吃饭。
+⚠️免责声明：本内容仅为行情复盘研究，不构成任何投资建议
 """
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     resp = client.chat.completions.create(
-        model="glm-4-flash",
+        model="glm-4‑flash",
         messages=[{"role":"user","content":prompt}]
     )
     return resp.choices[0].message.content
 
 def send_wechat_report(title, content):
-    import requests
     sendkey = os.getenv("SERVERCHAN_SENDKEY")
     if not sendkey:
         print("SERVERCHAN_SENDKEY为空，推送终止")
