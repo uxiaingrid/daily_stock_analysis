@@ -2,14 +2,14 @@ import os
 import requests
 
 def get_macro_news():
-    """调用博查API，查询日股相关宏观新闻：日本央行、日元、日债、美联储对日经/东证影响"""
+    """调用博查API，查询日股宏观：日本央行、日元汇率、美日货币政策、机构观点，对日经225、东证TOPIX市场影响"""
     api_key = os.getenv("BOCHA_API_KEY")
     if not api_key:
         return "未读取BOCHA_API_KEY，无法获取宏观新闻"
     url = "https://api.bochaai.com/v1/web-search"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type":"application/json"}
+    headers = {"Authorization": f"Bearer {api_key}", "Content‑Type":"application/json"}
     payload = {
-        "query":"日本央行 日元汇率 日债 美联储政策 对日经225、东证TOPIX的市场影响，最新宏观资讯",
+        "query":"近3个交易日 日本央行政策、日元汇率、美日利差、华尔街机构对日股观点，对日经225、东证TOPIX的市场影响，最新资讯",
         "summary": True,
         "count": 5
     }
