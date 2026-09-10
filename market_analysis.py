@@ -69,8 +69,6 @@ def generate_analysis_report(raw_data):
 缠论分型分析结果：{chan_analysis}
 
 输出模板：
-# 📈 日股盘后报告
----
 🌐 宏观事件
 
 ---
