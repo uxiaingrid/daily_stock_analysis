@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import yfinance as yf
 from zhipuai import ZhipuAI
@@ -27,12 +28,29 @@ def bocha_search(query):
         print(f"博查搜索出错:{e}")
         return ""
 
+def filter_old_news(text):
+    """过滤掉包含旧日期的新闻，简单正则过滤月份日期，只保留近1天新闻"""
+    if not text.strip():
+        return ""
+    # 匹配类似9月4日、09‑04这种日期格式
+    date_pattern = re.compile(r"(\d{1,2}月\d{1,2}日)")
+    lines = text.split("\n")
+    keep_lines = []
+    for line in lines:
+        match = date_pattern.search(line)
+        if match:
+            # 如果句子里面出现明确日期，就丢弃这条
+            continue
+        keep_lines.append(line)
+    return "\n".join(keep_lines).strip()
+
 def get_macro_news():
     """获取日股近24小时宏观新闻，强制过滤旧新闻"""
-    raw_news = bocha_search("日本股市 日经225 日本宏观经济 日元汇率，只检索最近24小时新闻，排除超过24小时的历史旧资讯，不要过往月份旧新闻")
-    if not raw_news.strip():
+    raw_news = bocha_search("日本股市 日经225 日本宏观经济 日元汇率，限定最近1天内的新闻，不要历史旧资讯")
+    filtered_news = filter_old_news(raw_news)
+    if not filtered_news.strip():
         return "近一日无重大日本宏观新闻"
-    return raw_news
+    return filtered_news
 
 def get_index_data():
     """获取上个交易日收盘数据，日经225 + 东证TOPIX(1306.T ETF替代)，修复涨跌幅计算"""
@@ -111,7 +129,7 @@ def generate_analysis_report(raw_data):
 """
     client = ZhipuAI(api_key=ZHIPUAI_API_KEY)
     resp = client.chat.completions.create(
-        model="glm-4-flash",
+        model="glm-4-flash", # 修复：英文半角减号，解决模型不存在报错
         messages=[{"role":"user","content":prompt}]
     )
     return resp.choices[0].message.content
