@@ -4,8 +4,8 @@ name: 日股收盘自动分析推送
 on:
   workflow_dispatch:
   schedule:
-    # 日股收盘北京时间14:00，14:30执行，UTC=06:30
-    - cron: '30 6 * * 1-5'
+    # 日股收盘北京时间16:30执行，UTC=06:30
+    - cron: '30 8 * * 1-5'
 
 env:
   ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
